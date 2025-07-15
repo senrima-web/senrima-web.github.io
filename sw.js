@@ -13,7 +13,8 @@ const CORE_ASSETS = [
   '/dashboard.html',
   '/tools.html',
   '/js/main.js',
-  '/manifest.json'
+  '/manifest.json',
+  '/favicon.ico'
 ];
 
 // Aset dari luar (CDN) yang juga ingin kita simpan.
