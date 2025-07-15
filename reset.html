@@ -3,35 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Password - Proteksi Senrima</title>
+    <title>Dashboard - Proteksi Senrima</title>
     
     <!-- PWA - Warna Tema Browser -->
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#ffffff">
     <!-- PWA - Link ke Manifest -->
     <link rel="manifest" href="manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Poppins', sans-serif; } </style>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .menu-active { background-color: #DBEAFE; color: #1D4ED8; font-weight: 600; }
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div id="reset-container" class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">
-        <h1 class="text-2xl font-bold text-gray-800">Buat Password Baru</h1>
-        <p class="text-gray-500 mt-2 mb-8">Masukkan password baru Anda di bawah ini.</p>
-        <form id="reset-form">
-            <div class="mb-5">
-                <label for="reset-password" class="block text-sm font-medium text-gray-700 mb-2 text-left">Password Baru</label>
-                <input id="reset-password" type="password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" required>
-            </div>
-            <div class="mb-6">
-                <label for="reset-confirm-password" class="block text-sm font-medium text-gray-700 mb-2 text-left">Konfirmasi Password Baru</label>
-                <input id="reset-confirm-password" type="password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" required>
-            </div>
-            <button type="submit" id="reset-btn" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-semibold transition-transform transform hover:scale-105">Simpan Password Baru</button>
-        </form>
-        <div id="status-message" class="mt-4"></div>
+<body class="bg-gray-100" x-data="dashboardApp()" x-init="init()" x-cloak>
+    <!-- Layar Pemuatan -->
+    <div x-show="isLoading" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <h2 class="text-xl font-semibold text-gray-700">Verifikasi sesi Anda...</h2>
+        </div>
     </div>
-    <script src="js/main.js"></script>
+    <!-- Konten Utama -->
+    <div x-show="!isLoading" class="flex h-screen w-full">
+        <!-- Sidebar -->
+        <nav class="hidden lg:flex lg:flex-col lg:w-64 lg:flex-shrink-0 bg-white border-r border-gray-200">
+            <div class="p-4 flex items-center justify-center border-b h-16">
+                <a href="#" @click.prevent="activeView = 'beranda'" class="text-2xl font-bold text-blue-600">Proteksi Senrima</a>
+            </div>
+            <div class="flex-1 mt-6 px-2 space-y-2">
+                <a href="#" @click.prevent="activeView = 'beranda'" :class="activeView === 'beranda' ? 'menu-active' : ''" class="flex items-center px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><span>Beranda</span></a>
+                <a href="#" @click.prevent="activeView = 'aset'" :class="activeView === 'aset' ? 'menu-active' : ''" class="flex items-center px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><span>Aset Digital</span></a>
+                <a href="#" @click.prevent="activeView = 'akun'" :class="activeView === 'akun' ? 'menu-active' : ''" class="flex items-center px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><span>Akun Saya</span></a>
+            </div>
+            <div class="p-4 border-t">
+                <button @click="logout()" class="w-full flex items-center justify-center px-4 py-2.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors font-semibold"><span>Keluar</span></button>
+            </div>
+        </nav>
+        <!-- Area Konten -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="flex justify-between items-center p-4 bg-white border-b shadow-sm h-16">
+                <span class="font-semibold text-gray-700" x-text="`Selamat Datang, ${userData.nama || 'Pengguna'}`"></span>
+            </header>
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <!-- View: Beranda -->
+                <div x-show="activeView === 'beranda'">
+                    <h3 class="text-gray-800 text-3xl font-medium">Beranda</h3>
+                </div>
+                <!-- View: Aset -->
+                <div x-show="activeView === 'aset'">
+                    <h3 class="text-gray-800 text-3xl font-medium">Aset Digital</h3>
+                     <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="button in menuData.aset" :key="button.id">
+                            <a x-show="button.visible" :href="button.url" target="_blank" class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center font-semibold text-gray-700" x-text="button.text"></a>
+                        </template>
+                    </div>
+                </div>
+                <!-- View: Akun -->
+                <div x-show="activeView === 'akun'">
+                    <h3 class="text-gray-800 text-3xl font-medium">Akun Saya</h3>
+                    <div class="mt-6 bg-white p-6 rounded-lg shadow-md max-w-lg">
+                        <h4 class="text-xl font-semibold mb-4 text-gray-700">Ubah Password</h4>
+                        <div x-show="userData.status === 'Wajib Ganti Password'" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md" role="alert">
+                          <p class="font-bold">Perhatian:</p>
+                          <p>Login pertama berhasil. Anda wajib membuat password baru yang lebih aman.</p>
+                        </div>
+                        <form @submit.prevent="changePassword()">
+                            <div class="mb-4">
+                                <label for="old-password" class="block text-sm font-medium text-gray-700 mb-1">Password Lama</label>
+                                <input x-model="passwordForm.old" id="old-password" type="password" class="w-full p-2 border border-gray-300 rounded-md" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">Password Baru</label>
+                                <input x-model="passwordForm.new" id="new-password" type="password" class="w-full p-2 border border-gray-300 rounded-md" required>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Ubah Password</button>
+                        </form>
+                        <div x-text="passwordForm.message" :class="passwordForm.success ? 'text-green-600' : 'text-red-600'" class="text-sm mt-4 h-5 font-medium"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+        const API_ENDPOINT = "https://wmalam.senrima-ms.workers.dev"; // ‼️ GANTI DENGAN URL ANDA
+        function dashboardApp() {
+            return {
+                isLoading: true, activeView: 'beranda', userData: {}, menuData: { aset: [], bonus: [] },
+                passwordForm: { old: '', new: '', message: '', success: false },
+                async init() {
+                    const token = sessionStorage.getItem('appToken');
+                    if (!token) { window.location.href = 'index.html'; return; }
+                    const response = await this.callApi({ action: 'getDashboardData' });
+                    if (response.status === 'success') {
+                        this.userData = response.userData;
+                        this.menuData = response.menuData;
+                        if (this.userData.status === 'Wajib Ganti Password') this.activeView = 'akun';
+                    } else {
+                        alert(response.message);
+                        this.logout(false);
+                    }
+                    this.isLoading = false;
+                },
+                async callApi(payload) {
+                    const token = sessionStorage.getItem('appToken');
+                    const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
+                    try {
+                        const response = await fetch(API_ENDPOINT, { method: 'POST', headers, body: JSON.stringify(payload) });
+                        const result = await response.json();
+                        if (result.message && (result.message.includes('Token tidak valid') || result.message.includes('Sesi telah berakhir'))) {
+                            alert(result.message);
+                            this.logout(false);
+                        }
+                        return result;
+                    } catch (e) { return { status: 'error', message: 'Koneksi gagal.' }; }
+                },
+                async changePassword() {
+                    this.passwordForm.message = 'Memproses...';
+                    const payload = { action: 'changePassword', oldPassword: this.passwordForm.old, newPassword: this.passwordForm.new };
+                    const result = await this.callApi(payload);
+                    this.passwordForm.message = result.message;
+                    this.passwordForm.success = result.status === 'success';
+                    if (result.status === 'success') {
+                        this.passwordForm.old = ''; this.passwordForm.new = '';
+                        this.userData.status = 'Aktif'; 
+                    }
+                },
+                async logout(callServer = true) {
+                    if (callServer) await this.callApi({ action: 'logout' });
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                }
+            }
+        }
+    </script>
     <!-- PWA - Mendaftarkan Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
