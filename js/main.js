@@ -103,7 +103,8 @@ function setupOtpPage() {
         const result = await callPublicApi({ action: 'verifyOTP', email, otp }, 'otp-btn');
         if (result.status === 'success' || result.status === 'change_password_required') {
             sessionStorage.removeItem('userEmailForOTP');
-            window.location.href = `dashboard.html?email=${encodeURIComponent(email)}`;
+            // ⬇️ PERUBAHAN DI SINI ⬇️
+            window.location.href = 'dashboard-new.html';
         }
     });
 }
