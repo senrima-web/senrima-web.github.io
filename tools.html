@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manajemen Karyawan - Proteksi Senrima</title>
     
-    <!-- PWA - Warna Tema Browser -->
     <meta name="theme-color" content="#ffffff">
-    <!-- PWA - Link ke Manifest -->
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,7 +18,6 @@
     </style>
 </head>
 <body class="bg-gray-100" x-data="crudApp()" x-init="init()" x-cloak>
-    <!-- Header -->
     <header class="bg-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
@@ -28,13 +26,11 @@
             </div>
         </div>
     </header>
-    <!-- Main Content -->
     <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-800">Data Karyawan</h1>
             <button @click="openModal()" class="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition">Tambah Karyawan</button>
         </div>
-        <!-- Tabel Data -->
         <div class="bg-white p-6 rounded-2xl shadow-xl w-full overflow-x-auto">
             <table class="min-w-full bg-white">
                 <thead class="bg-gray-50">
@@ -67,7 +63,6 @@
             </table>
         </div>
     </main>
-    <!-- Modal -->
     <div x-show="isModalOpen" @keydown.escape.window="closeModal()" class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen">
             <div x-show="isModalOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="closeModal()"></div>
@@ -96,15 +91,28 @@
     </div>
     <script>
         const API_ENDPOINT = "https://wmalam.senrima-ms.workers.dev"; // ‼️ GANTI DENGAN URL ANDA
+
         function crudApp() {
             return {
-                isLoading: true, karyawan: [], isModalOpen: false, modal: { isEdit: false, id: null, nama: '', jabatan: '' },
-                async init() { this.loadKaryawan(); },
+                isLoading: true,
+                karyawan: [],
+                isModalOpen: false,
+                modal: { isEdit: false, id: null, nama: '', jabatan: '' },
+
+                init() {
+                    this.loadKaryawan();
+                },
+
+                // ⬇️ PERBAIKAN DI SINI ⬇️
                 async callApi(payload) {
                     const token = sessionStorage.getItem('appToken');
-                    if (!token) { alert('Sesi tidak ditemukan. Silakan login kembali.'); window.location.href = 'index.html'; return; }
+                    if (!token) {
+                        alert('Sesi tidak ditemukan. Silakan login kembali.');
+                        window.location.href = 'index.html';
+                        return;
+                    }
                     
-                    // PERUBAHAN: Menambahkan parameter kontrol
+                    // Selalu tambahkan 'kontrol: karyawan' untuk semua aksi di halaman tools
                     const finalPayload = { ...payload, kontrol: 'karyawan' };
 
                     const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
@@ -117,8 +125,12 @@
                             window.location.href = 'index.html';
                         }
                         return result;
-                    } catch (e) { return { status: 'error', message: 'Koneksi gagal.' }; }
+                    } catch (e) {
+                        return { status: 'error', message: 'Koneksi gagal.' };
+                    }
                 },
+                // ⬆️ PERBAIKAN DI SINI ⬆️
+
                 async loadKaryawan() {
                     this.isLoading = true;
                     const result = await this.callApi({ action: 'readAllKaryawan' });
@@ -133,7 +145,12 @@
                 },
                 closeModal() { this.isModalOpen = false; },
                 async saveKaryawan() {
-                    const payload = { action: this.modal.isEdit ? 'updateKaryawan' : 'createKaryawan', nama: this.modal.nama, jabatan: this.modal.jabatan, id: this.modal.id };
+                    const payload = {
+                        action: this.modal.isEdit ? 'updateKaryawan' : 'createKaryawan',
+                        nama: this.modal.nama,
+                        jabatan: this.modal.jabatan,
+                        id: this.modal.id
+                    };
                     const result = await this.callApi(payload);
                     if (result.status === 'success') { this.closeModal(); this.loadKaryawan(); } 
                     else { alert('Gagal menyimpan data: ' + result.message); }
@@ -148,7 +165,7 @@
             }
         }
     </script>
-    <!-- PWA - Mendaftarkan Service Worker -->
+    
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
