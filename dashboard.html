@@ -12,6 +12,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <script src="js/main.js"></script>
+
     <style>
         body { font-family: 'Poppins', sans-serif; }
         .menu-active { background-color: #DBEAFE; color: #1D4ED8; font-weight: 600; }
@@ -22,7 +25,7 @@
     <div x-show="isLoading" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
         <div class="text-center">
             <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <h2 class="text-xl font-semibold text-gray-700">Verifikasi sesi Anda...</h2>
+            <h2 class="text-xl font-semibold text-gray-700">Proses koneksi ke server, mohon tunggu...</h2>
         </div>
     </div>
     <div x-show="!isLoading" class="flex h-screen w-full">
@@ -75,100 +78,17 @@
                             </div>
                             <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Ubah Password</button>
                         </form>
-                        <div x-text="passwordForm.message" :class="passwordForm.success ? 'text-green-600' : 'text-red-600'" class="text-sm mt-4 h-5 font-medium"></div>
+                        <div id="status-message" x-text="passwordForm.message" :class="passwordForm.success ? 'text-green-600' : 'text-red-600'" class="text-sm mt-4 h-5 font-medium"></div>
                     </div>
                 </div>
             </main>
         </div>
     </div>
-
-    <script>
-        const API_ENDPOINT = "https://wmalam.senrima-ms.workers.dev";
-
-        function dashboardApp() {
-            return {
-                isLoading: true,
-                sessionToken: null,
-                activeView: 'beranda',
-                userData: {},
-                menuData: { aset: [] },
-                passwordForm: { old: '', new: '', message: '', success: false },
-
-                async init() {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const email = urlParams.get('email');
-
-                    if (!email) {
-                        alert('Akses tidak sah. Mengarahkan ke halaman login.');
-                        window.location.href = 'index.html';
-                        return;
-                    }
-
-                    const response = await this.callApi({ action: 'verifyDashboardAccess', email });
-
-                    if (response.status === 'success') {
-                        this.sessionToken = response.token;
-                        this.userData = response.userData;
-                        this.menuData = response.menuData;
-                        if (this.userData.status === 'Wajib Ganti Password') {
-                            this.activeView = 'akun';
-                        }
-                        this.isLoading = false;
-                    } else {
-                        alert(response.message);
-                        window.location.href = 'index.html';
-                    }
-                },
-
-                async callApi(payload) {
-                    const headers = { 'Content-Type': 'application/json' };
-                    if (this.sessionToken && payload.action !== 'verifyDashboardAccess') {
-                        headers['X-Auth-Token'] = this.sessionToken;
-                    }
-                    
-                    const finalPayload = { ...payload, kontrol: 'proteksi' };
-
-                    try {
-                        const response = await fetch(API_ENDPOINT, { method: 'POST', headers, body: JSON.stringify(finalPayload) });
-                        const result = await response.json();
-
-                        if (result.status === 'error' && (result.message.includes('Token tidak valid') || result.message.includes('Sesi telah berakhir'))) {
-                            alert(result.message);
-                            window.location.href = 'index.html';
-                        }
-                        return result;
-                    } catch (e) {
-                        return { status: 'error', message: 'Koneksi gagal.' };
-                    }
-                },
-
-                async changePassword() {
-                    this.passwordForm.message = 'Memproses...';
-                    const payload = { action: 'changePassword', oldPassword: this.passwordForm.old, newPassword: this.passwordForm.new };
-                    const result = await this.callApi(payload);
-                    this.passwordForm.message = result.message;
-                    this.passwordForm.success = result.status === 'success';
-                    if (result.status === 'success') {
-                        this.passwordForm.old = '';
-                        this.passwordForm.new = '';
-                        this.userData.status = 'Aktif';
-                    }
-                },
-
-                async logout() {
-                    if (this.sessionToken) {
-                        await this.callApi({ action: 'logout' });
-                    }
-                    window.location.href = 'index.html';
-                }
-            }
-        }
-    </script>
     
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(reg => console.log('Service worker registered', reg)).catch(err => console.log('Service worker not registered', err));
+                navigator.serviceWorker.register('/sw.js');
             });
         }
     </script>
