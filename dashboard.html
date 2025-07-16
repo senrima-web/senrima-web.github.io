@@ -83,59 +83,64 @@
     </div>
 
     <script>
-        const API_ENDPOINT = "https://wmalam.senrima-ms.workers.dev"; // ‼️ GANTI DENGAN URL ANDA
+        const API_ENDPOINT = "https://wmalam.senrima-ms.workers.dev";
 
         function dashboardApp() {
             return {
                 isLoading: true,
+                sessionToken: null,
                 activeView: 'beranda',
                 userData: {},
-                menuData: { aset: [], bonus: [] },
+                menuData: { aset: [] },
                 passwordForm: { old: '', new: '', message: '', success: false },
 
                 async init() {
-                    const token = sessionStorage.getItem('appToken');
-                    if (!token) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const email = urlParams.get('email');
+
+                    if (!email) {
+                        alert('Akses tidak sah. Mengarahkan ke halaman login.');
                         window.location.href = 'index.html';
                         return;
                     }
-                    const response = await this.callApi({ action: 'getDashboardData' });
+
+                    const response = await this.callApi({ action: 'verifyDashboardAccess', email });
+
                     if (response.status === 'success') {
+                        this.sessionToken = response.token;
                         this.userData = response.userData;
                         this.menuData = response.menuData;
-                        if (this.userData.status === 'Wajib Ganti Password') this.activeView = 'akun';
+                        if (this.userData.status === 'Wajib Ganti Password') {
+                            this.activeView = 'akun';
+                        }
+                        this.isLoading = false;
                     } else {
                         alert(response.message);
-                        this.logout(false);
+                        window.location.href = 'index.html';
                     }
-                    this.isLoading = false;
                 },
 
-                // ⬇️ PERBAIKAN DI SINI ⬇️
                 async callApi(payload) {
-                    const token = sessionStorage.getItem('appToken');
-                    const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
-
-                    // Selalu tambahkan 'kontrol: proteksi' untuk semua aksi di dashboard
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (this.sessionToken && payload.action !== 'verifyDashboardAccess') {
+                        headers['X-Auth-Token'] = this.sessionToken;
+                    }
+                    
                     const finalPayload = { ...payload, kontrol: 'proteksi' };
 
                     try {
-                        const response = await fetch(API_ENDPOINT, {
-                            method: 'POST',
-                            headers,
-                            body: JSON.stringify(finalPayload) // Kirim payload yang sudah ada 'kontrol'
-                        });
+                        const response = await fetch(API_ENDPOINT, { method: 'POST', headers, body: JSON.stringify(finalPayload) });
                         const result = await response.json();
-                        if (result.message && (result.message.includes('Token tidak valid') || result.message.includes('Sesi telah berakhir'))) {
+
+                        if (result.status === 'error' && (result.message.includes('Token tidak valid') || result.message.includes('Sesi telah berakhir'))) {
                             alert(result.message);
-                            this.logout(false);
+                            window.location.href = 'index.html';
                         }
                         return result;
                     } catch (e) {
                         return { status: 'error', message: 'Koneksi gagal.' };
                     }
                 },
-                // ⬆️ PERBAIKAN DI SINI ⬆️
 
                 async changePassword() {
                     this.passwordForm.message = 'Memproses...';
@@ -150,9 +155,10 @@
                     }
                 },
 
-                async logout(callServer = true) {
-                    if (callServer) await this.callApi({ action: 'logout' });
-                    sessionStorage.clear();
+                async logout() {
+                    if (this.sessionToken) {
+                        await this.callApi({ action: 'logout' });
+                    }
                     window.location.href = 'index.html';
                 }
             }
