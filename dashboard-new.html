@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard (Demo) - Proteksi Senrima</title>
+    
+    <meta name="theme-color" content="#ffffff">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .menu-active { background-color: #DBEAFE; color: #1D4ED8; font-weight: 600; }
+        [x-cloak] { display: none !important; }
+    </style>
+
+    <script>
+        function dashboardDemoApp() {
+            return {
+                isSidebarOpen: false,
+                activeView: 'beranda',
+                userData: {
+                    nama: 'senrima'
+                },
+                menuData: {
+                    aset: [
+                        { id: 1, text: 'Manajemen Karyawan (Demo)', url: '#' },
+                        { id: 2, text: 'Laporan Keuangan (Demo)', url: '#' }
+                    ],
+                    bonus: [
+                        { id: 1, text: 'Bonus Tahunan', content: 'Detail bonus tahunan Anda akan ditampilkan di sini.'},
+                        { id: 2, text: 'Insentif Kinerja', content: 'Detail insentif kinerja Anda.'}
+                    ]
+                },
+                passwordForm: {
+                    message: ''
+                },
+                changePassword() {
+                    this.passwordForm.message = 'Fungsi ini dinonaktifkan dalam mode demo.';
+                },
+                logout() {
+                    alert('Ini adalah halaman demo. Kembali ke halaman login.');
+                    window.location.href = 'index.html';
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100" x-data="dashboardDemoApp()" @keydown.escape.window="isSidebarOpen = false" x-cloak>
+    <div class="flex h-screen w-full bg-gray-100">
+        <!-- Overlay untuk mobile menu -->
+        <div x-show="isSidebarOpen" @click="isSidebarOpen = false" class="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"></div>
+
+        <!-- Sidebar -->
+        <nav 
+            class="fixed inset-y-0 left-0 z-30 flex h-full w-64 flex-col flex-shrink-0 transform bg-white border-r transition-transform duration-300 ease-in-out lg:static lg:translate-x-0"
+            :class="{'translate-x-0': isSidebarOpen, '-translate-x-full': !isSidebarOpen}"
+        >
+            <div class="p-4 flex items-center justify-between border-b h-16">
+                <span class="text-2xl font-bold text-gray-800">Dashboard</span>
+                <button @click="isSidebarOpen = false" class="lg:hidden text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <div class="flex-1 mt-6 px-2 space-y-2">
+                <a href="#" @click.prevent="activeView = 'beranda'; isSidebarOpen = false" :class="activeView === 'beranda' ? 'menu-active' : ''" class="flex items-center px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><span>Beranda</span></a>
+                <a href="#" @click.prevent="activeView = 'aset'; isSidebarOpen = false" :class="activeView === 'aset' ? 'menu-active' : ''" class="flex items-center px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><span>Aset Digital</span></a>
+                <a href="#" @click.prevent="activeView = 'bonus'; isSidebarOpen = false" :class="activeView === 'bonus' ? 'menu-active' : ''" class="flex items-center px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><span>Bonus</span></a>
+                <a href="#" @click.prevent="activeView = 'akun'; isSidebarOpen = false" :class="activeView === 'akun' ? 'menu-active' : ''" class="flex items-center px-4 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><span>Akun Saya</span></a>
+            </div>
+
+            <div class="p-4 border-t">
+                <button @click="logout()" class="w-full flex items-center justify-center px-4 py-2.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors font-semibold"><span>Keluar</span></button>
+            </div>
+        </nav>
+        
+        <!-- Area Konten Utama -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="flex justify-between items-center p-4 bg-white border-b shadow-sm h-16">
+                <button @click="isSidebarOpen = true" class="lg:hidden text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                </button>
+                
+                <!-- ⬇️ PERUBAHAN TAMPILAN NAMA PENGGUNA ⬇️ -->
+                <div class="flex items-center bg-gray-100 hover:bg-gray-200 rounded-full pl-3 pr-1 py-1 ml-auto cursor-pointer transition-colors duration-200">
+                    <span class="hidden sm:inline font-semibold text-gray-700 text-sm mr-2" x-text="userData.nama"></span>
+                    <img src="favicon.ico" alt="Avatar" class="w-8 h-8 rounded-full object-cover">
+                </div>
+                <!-- ⬆️ PERUBAHAN TAMPILAN NAMA PENGGUNA ⬆️ -->
+            </header>
+            
+            <!-- Konten Dinamis -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <!-- View: Beranda -->
+                <div x-show="activeView === 'beranda'">
+                    <h3 class="text-gray-800 text-3xl font-medium">Beranda</h3>
+                    <p class="mt-4 text-gray-600">Ini adalah halaman demo dashboard Proteksi Senrima.</p>
+                </div>
+                <!-- View: Aset -->
+                <div x-show="activeView === 'aset'">
+                    <h3 class="text-gray-800 text-3xl font-medium">Aset Digital</h3>
+                     <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="button in menuData.aset" :key="button.id">
+                            <a :href="button.url" class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center font-semibold text-gray-700" x-text="button.text"></a>
+                        </template>
+                    </div>
+                </div>
+                <!-- View: Bonus -->
+                <div x-show="activeView === 'bonus'">
+                    <h3 class="text-gray-800 text-3xl font-medium">Bonus Anda</h3>
+                    <div class="mt-8 space-y-6">
+                        <template x-for="item in menuData.bonus" :key="item.id">
+                            <div class="bg-white p-6 rounded-lg shadow">
+                                <h4 class="font-semibold text-lg text-gray-800" x-text="item.text"></h4>
+                                <p class="mt-2 text-gray-600" x-text="item.content"></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <!-- View: Akun -->
+                <div x-show="activeView === 'akun'">
+                    <h3 class="text-gray-800 text-3xl font-medium">Akun Saya</h3>
+                    <div class="mt-6 bg-white p-6 rounded-lg shadow-md max-w-lg">
+                        <h4 class="text-xl font-semibold mb-4 text-gray-700">Ubah Password</h4>
+                        <form @submit.prevent="changePassword()">
+                            <div class="mb-4">
+                                <label for="old-password" class="block text-sm font-medium text-gray-700 mb-1">Password Lama</label>
+                                <input id="old-password" type="password" class="w-full p-2 border border-gray-300 rounded-md">
+                            </div>
+                            <div class="mb-4">
+                                <label for="new-password" class="block text-sm font-medium text-gray-700 mb-1">Password Baru</label>
+                                <input id="new-password" type="password" class="w-full p-2 border border-gray-300 rounded-md">
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Ubah Password</button>
+                        </form>
+                        <div x-text="passwordForm.message" class="text-sm mt-4 h-5 font-medium text-red-600"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('Service worker registered.', reg);
+                }).catch(err => {
+                    console.error('Service worker registration failed:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
