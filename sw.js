@@ -1,8 +1,7 @@
 // Nama cache unik untuk aplikasi kita. Ubah ini jika Anda membuat perubahan besar.
-const CACHE_NAME = 'proteksi-senrima-cache-v2';
+const CACHE_NAME = 'proteksi-senrima-cache-v3'; // Versi cache dinaikkan
 
 // Daftar semua file yang ingin kita simpan untuk mode offline.
-// PASTIKAN SEMUA FILE HTML INI ADA DI REPOSITORI ANDA!
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -14,15 +13,16 @@ const CORE_ASSETS = [
   '/tools.html',
   '/js/main.js',
   '/manifest.json',
-  '/favicon.ico'
+  '/favicon.ico', // Ikon untuk tab browser
+  '/icon-192x192.png', // Ikon untuk PWA
+  '/icon-512x512.png'  // Ikon untuk PWA
 ];
 
 // Aset dari luar (CDN) yang juga ingin kita simpan.
 const EXTERNAL_ASSETS = [
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap',
-  'https://placehold.co/192x192/2563eb/FFFFFF?text=PS', // Ikon 192x192
-  'https://placehold.co/512x512/2563eb/FFFFFF?text=PS'  // Ikon 512x512
+  'https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js' // Tambahkan ini jika digunakan di beberapa halaman
 ];
 
 // Gabungkan semua aset menjadi satu daftar.
@@ -34,14 +34,13 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Cache dibuka, mulai menyimpan aset...');
-        // Kita gunakan fetch dan put secara manual untuk setiap request
-        // agar lebih tahan banting daripada addAll.
         const cachePromises = urlsToCache.map(urlToCache => {
-          // Buat request baru untuk setiap URL
           const request = new Request(urlToCache, { mode: 'no-cors' });
           return fetch(request).then(response => {
-            // Simpan respons ke cache
-            return cache.put(request, response);
+            if (response.status === 200) {
+              return cache.put(request, response);
+            }
+            return Promise.resolve();
           }).catch(error => {
             console.error(`Gagal menyimpan ke cache: ${urlToCache}`, error);
           });
@@ -49,23 +48,35 @@ self.addEventListener('install', event => {
         return Promise.all(cachePromises);
       })
       .then(() => {
-        console.log('Semua aset inti berhasil disimpan di cache.');
+        console.log('Semua aset berhasil disimpan di cache.');
+        return self.skipWaiting(); // Aktifkan service worker baru segera
       })
   );
 });
 
 // Event 'fetch': Dijalankan setiap kali halaman mencoba mengambil sumber daya.
 self.addEventListener('fetch', event => {
+  // Hanya tangani permintaan GET
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(event.request).then(response => {
         // Jika ditemukan di cache, kembalikan dari cache.
-        if (response) {
-          return response;
-        }
         // Jika tidak, coba ambil dari jaringan.
-        return fetch(event.request);
-      })
+        const fetchPromise = fetch(event.request).then(networkResponse => {
+          // Jika berhasil dari jaringan, simpan salinannya ke cache
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(event.request, networkResponse.clone());
+          }
+          return networkResponse;
+        });
+        
+        return response || fetchPromise;
+      });
+    })
   );
 });
 
@@ -77,10 +88,11 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Menghapus cache lama:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
-    })
+    }).then(() => self.clients.claim()) // Ambil alih kontrol halaman segera
   );
 });
