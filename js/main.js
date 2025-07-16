@@ -21,24 +21,20 @@ function setStatusMessage(message, type) {
 // ===============================================================
 //                       FUNGSI UTAMA API
 // ===============================================================
-// PERUBAHAN: Fungsi ini sekarang menerima parameter 'kontrol'
-async function callApi(payload, btnId, kontrol) {
+async function callApi(payload, btnId) {
     const btn = document.getElementById(btnId);
     const originalText = btn ? btn.textContent : '';
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `<svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
     }
-    setStatusMessage('', 'success'); 
+    setStatusMessage('', 'success');
 
-    // PERUBAHAN: Menambahkan parameter 'kontrol' ke dalam payload
-    const finalPayload = { ...payload, kontrol: kontrol };
+    // Semua aksi di main.js dikontrol oleh 'proteksi'
+    const finalPayload = { ...payload, kontrol: 'proteksi' };
 
     try {
         const headers = { 'Content-Type': 'application/json' };
-        const token = sessionStorage.getItem('appToken');
-        if (token) headers['X-Auth-Token'] = token;
-        
         const response = await fetch(API_ENDPOINT, { method: 'POST', headers: headers, body: JSON.stringify(finalPayload) });
         const result = await response.json();
 
@@ -62,66 +58,72 @@ async function callApi(payload, btnId, kontrol) {
 document.addEventListener('DOMContentLoaded', () => {
     const page = window.location.pathname.split('/').pop() || 'index.html';
 
-    // Semua aksi di halaman ini dikontrol oleh 'proteksi'
-    if (['index.html', 'daftar.html', 'otp.html', 'lupa-password.html', 'reset.html'].includes(page)) {
-        const KONTROL_PROTEKSI = 'proteksi';
+    // ===== LOGIKA BARU: PENGALIHAN OTOMATIS JIKA SUDAH LOGIN =====
+    const token = sessionStorage.getItem('appToken');
+    if (token && (page === 'index.html' || page === '' || page === 'daftar.html')) {
+        // Jika ada token dan pengguna ada di halaman login/daftar,
+        // langsung arahkan ke dashboard tanpa menampilkan apapun.
+        window.location.href = 'dashboard.html';
+        return; // Hentikan eksekusi lebih lanjut
+    }
+    // ===============================================================
 
-        if (page === 'index.html' || page === '') {
-            document.getElementById('login-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('login-email').value;
-                const password = document.getElementById('login-password').value;
-                sessionStorage.setItem('userEmailForOTP', email);
-                const result = await callApi({ action: 'requestOTP', email, password }, 'login-btn', KONTROL_PROTEKSI);
-                if (result.status === 'success') window.location.href = 'otp.html';
-            });
-        }
+    // Kode di bawah ini hanya akan berjalan jika pengguna BELUM login
+    if (page === 'index.html' || page === '') {
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            sessionStorage.setItem('userEmailForOTP', email);
+            const result = await callApi({ action: 'requestOTP', email, password }, 'login-btn');
+            if (result.status === 'success') window.location.href = 'otp.html';
+        });
+    }
 
-        if (page === 'daftar.html') {
-            document.getElementById('register-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const nama = document.getElementById('register-nama').value;
-                const email = document.getElementById('register-email').value;
-                const result = await callApi({ action: 'register', nama, email }, 'register-btn', KONTROL_PROTEKSI);
-                if (result.status === 'success') setTimeout(() => { window.location.href = 'index.html'; }, 3000);
-            });
-        }
+    if (page === 'daftar.html') {
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nama = document.getElementById('register-nama').value;
+            const email = document.getElementById('register-email').value;
+            const result = await callApi({ action: 'register', nama, email }, 'register-btn');
+            if (result.status === 'success') setTimeout(() => { window.location.href = 'index.html'; }, 3000);
+        });
+    }
 
-        if (page === 'otp.html') {
-            const email = sessionStorage.getItem('userEmailForOTP');
-            if (!email) { window.location.href = 'index.html'; return; }
-            document.getElementById('otp-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const otp = document.getElementById('otp-code').value;
-                const result = await callApi({ action: 'verifyOTP', email, otp }, 'otp-btn', KONTROL_PROTEKSI);
-                if (result.status === 'success' || result.status === 'change_password_required') {
-                    sessionStorage.setItem('appToken', result.token);
-                    window.location.href = 'dashboard.html';
-                }
-            });
-        }
+    if (page === 'otp.html') {
+        const email = sessionStorage.getItem('userEmailForOTP');
+        if (!email) { window.location.href = 'index.html'; return; }
+        document.getElementById('otp-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const otp = document.getElementById('otp-code').value;
+            const result = await callApi({ action: 'verifyOTP', email, otp }, 'otp-btn');
+            if (result.status === 'success' || result.status === 'change_password_required') {
+                sessionStorage.setItem('appToken', result.token);
+                window.location.href = 'dashboard.html';
+            }
+        });
+    }
 
-        if (page === 'lupa-password.html') {
-            document.getElementById('forgot-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await callApi({ action: 'forgotPassword', email: document.getElementById('forgot-email').value }, 'forgot-btn', KONTROL_PROTEKSI);
-            });
-        }
+    if (page === 'lupa-password.html') {
+        document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await callApi({ action: 'forgotPassword', email: document.getElementById('forgot-email').value }, 'forgot-btn');
+        });
+    }
 
-        if (page === 'reset.html') {
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
-            if (!token) { document.getElementById('reset-container').innerHTML = '<h1 class="text-2xl text-red-600">Token tidak valid.</h1>'; return; }
-            document.getElementById('reset-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const newPassword = document.getElementById('reset-password').value;
-                if (newPassword !== document.getElementById('reset-confirm-password').value) {
-                    setStatusMessage('Password baru tidak cocok.', 'error');
-                    return;
-                }
-                const result = await callApi({ action: 'resetPassword', token, newPassword }, 'reset-btn', KONTROL_PROTEKSI);
-                if (result.status === 'success') setTimeout(() => { window.location.href = 'index.html'; }, 2000);
-            });
-        }
+    if (page === 'reset.html') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        if (!token) { document.getElementById('reset-container').innerHTML = '<h1 class="text-2xl text-red-600">Token tidak valid.</h1>'; return; }
+        document.getElementById('reset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('reset-password').value;
+            if (newPassword !== document.getElementById('reset-confirm-password').value) {
+                setStatusMessage('Password baru tidak cocok.', 'error');
+                return;
+            }
+            const result = await callApi({ action: 'resetPassword', token, newPassword }, 'reset-btn');
+            if (result.status === 'success') setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+        });
     }
 });
