@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Proteksi Senrima</title>
     
-    <!-- PWA - Warna Tema Browser -->
     <meta name="theme-color" content="#ffffff">
-    <!-- PWA - Link ke Manifest -->
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,16 +19,13 @@
     </style>
 </head>
 <body class="bg-gray-100" x-data="dashboardApp()" x-init="init()" x-cloak>
-    <!-- Layar Pemuatan -->
     <div x-show="isLoading" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-100">
         <div class="text-center">
             <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             <h2 class="text-xl font-semibold text-gray-700">Verifikasi sesi Anda...</h2>
         </div>
     </div>
-    <!-- Konten Utama -->
     <div x-show="!isLoading" class="flex h-screen w-full">
-        <!-- Sidebar -->
         <nav class="hidden lg:flex lg:flex-col lg:w-64 lg:flex-shrink-0 bg-white border-r border-gray-200">
             <div class="p-4 flex items-center justify-center border-b h-16">
                 <a href="#" @click.prevent="activeView = 'beranda'" class="text-2xl font-bold text-blue-600">Proteksi Senrima</a>
@@ -43,26 +39,23 @@
                 <button @click="logout()" class="w-full flex items-center justify-center px-4 py-2.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors font-semibold"><span>Keluar</span></button>
             </div>
         </nav>
-        <!-- Area Konten -->
         <div class="flex-1 flex flex-col overflow-hidden">
             <header class="flex justify-between items-center p-4 bg-white border-b shadow-sm h-16">
                 <span class="font-semibold text-gray-700" x-text="`Selamat Datang, ${userData.nama || 'Pengguna'}`"></span>
             </header>
             <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
-                <!-- View: Beranda -->
                 <div x-show="activeView === 'beranda'">
                     <h3 class="text-gray-800 text-3xl font-medium">Beranda</h3>
+                    <p class="mt-4 text-gray-600">Selamat datang di dashboard Proteksi Senrima.</p>
                 </div>
-                <!-- View: Aset -->
                 <div x-show="activeView === 'aset'">
                     <h3 class="text-gray-800 text-3xl font-medium">Aset Digital</h3>
                      <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         <template x-for="button in menuData.aset" :key="button.id">
-                            <a x-show="button.visible" :href="button.url" target="_blank" class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center font-semibold text-gray-700" x-text="button.text"></a>
+                            <a x-show="button.visible" :href="button.url" class="block p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow text-center font-semibold text-gray-700" x-text="button.text"></a>
                         </template>
                     </div>
                 </div>
-                <!-- View: Akun -->
                 <div x-show="activeView === 'akun'">
                     <h3 class="text-gray-800 text-3xl font-medium">Akun Saya</h3>
                     <div class="mt-6 bg-white p-6 rounded-lg shadow-md max-w-lg">
@@ -88,15 +81,24 @@
             </main>
         </div>
     </div>
+
     <script>
         const API_ENDPOINT = "https://wmalam.senrima-ms.workers.dev"; // ‼️ GANTI DENGAN URL ANDA
+
         function dashboardApp() {
             return {
-                isLoading: true, activeView: 'beranda', userData: {}, menuData: { aset: [], bonus: [] },
+                isLoading: true,
+                activeView: 'beranda',
+                userData: {},
+                menuData: { aset: [], bonus: [] },
                 passwordForm: { old: '', new: '', message: '', success: false },
+
                 async init() {
                     const token = sessionStorage.getItem('appToken');
-                    if (!token) { window.location.href = 'index.html'; return; }
+                    if (!token) {
+                        window.location.href = 'index.html';
+                        return;
+                    }
                     const response = await this.callApi({ action: 'getDashboardData' });
                     if (response.status === 'success') {
                         this.userData = response.userData;
@@ -108,19 +110,33 @@
                     }
                     this.isLoading = false;
                 },
+
+                // ⬇️ PERBAIKAN DI SINI ⬇️
                 async callApi(payload) {
                     const token = sessionStorage.getItem('appToken');
                     const headers = { 'Content-Type': 'application/json', 'X-Auth-Token': token };
+
+                    // Selalu tambahkan 'kontrol: proteksi' untuk semua aksi di dashboard
+                    const finalPayload = { ...payload, kontrol: 'proteksi' };
+
                     try {
-                        const response = await fetch(API_ENDPOINT, { method: 'POST', headers, body: JSON.stringify(payload) });
+                        const response = await fetch(API_ENDPOINT, {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify(finalPayload) // Kirim payload yang sudah ada 'kontrol'
+                        });
                         const result = await response.json();
                         if (result.message && (result.message.includes('Token tidak valid') || result.message.includes('Sesi telah berakhir'))) {
                             alert(result.message);
                             this.logout(false);
                         }
                         return result;
-                    } catch (e) { return { status: 'error', message: 'Koneksi gagal.' }; }
+                    } catch (e) {
+                        return { status: 'error', message: 'Koneksi gagal.' };
+                    }
                 },
+                // ⬆️ PERBAIKAN DI SINI ⬆️
+
                 async changePassword() {
                     this.passwordForm.message = 'Memproses...';
                     const payload = { action: 'changePassword', oldPassword: this.passwordForm.old, newPassword: this.passwordForm.new };
@@ -128,10 +144,12 @@
                     this.passwordForm.message = result.message;
                     this.passwordForm.success = result.status === 'success';
                     if (result.status === 'success') {
-                        this.passwordForm.old = ''; this.passwordForm.new = '';
-                        this.userData.status = 'Aktif'; 
+                        this.passwordForm.old = '';
+                        this.passwordForm.new = '';
+                        this.userData.status = 'Aktif';
                     }
                 },
+
                 async logout(callServer = true) {
                     if (callServer) await this.callApi({ action: 'logout' });
                     sessionStorage.clear();
@@ -140,7 +158,7 @@
             }
         }
     </script>
-    <!-- PWA - Mendaftarkan Service Worker -->
+    
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
