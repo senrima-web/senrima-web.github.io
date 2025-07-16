@@ -1,7 +1,6 @@
 // ===============================================================
 //                       PENGATURAN PENTING
 // ===============================================================
-// ‼️ GANTI DENGAN ALAMAT CLOUDFLARE WORKER ANDA
 const API_ENDPOINT = "https://wmalam.senrima-ms.workers.dev";
 
 // ===============================================================
@@ -30,7 +29,6 @@ async function callApi(payload, btnId) {
     }
     setStatusMessage('', 'success');
 
-    // Semua aksi di main.js dikontrol oleh 'proteksi'
     const finalPayload = { ...payload, kontrol: 'proteksi' };
 
     try {
@@ -58,17 +56,7 @@ async function callApi(payload, btnId) {
 document.addEventListener('DOMContentLoaded', () => {
     const page = window.location.pathname.split('/').pop() || 'index.html';
 
-    // ===== LOGIKA BARU: PENGALIHAN OTOMATIS JIKA SUDAH LOGIN =====
-    const token = sessionStorage.getItem('appToken');
-    if (token && (page === 'index.html' || page === '' || page === 'daftar.html')) {
-        // Jika ada token dan pengguna ada di halaman login/daftar,
-        // langsung arahkan ke dashboard tanpa menampilkan apapun.
-        window.location.href = 'dashboard.html';
-        return; // Hentikan eksekusi lebih lanjut
-    }
-    // ===============================================================
-
-    // Kode di bawah ini hanya akan berjalan jika pengguna BELUM login
+    // Logika form login
     if (page === 'index.html' || page === '') {
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -76,34 +64,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('login-password').value;
             sessionStorage.setItem('userEmailForOTP', email);
             const result = await callApi({ action: 'requestOTP', email, password }, 'login-btn');
-            if (result.status === 'success') window.location.href = 'otp.html';
+            if (result.status === 'success') {
+                window.location.href = 'otp.html';
+            }
         });
     }
 
+    // Logika form daftar
     if (page === 'daftar.html') {
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const nama = document.getElementById('register-nama').value;
             const email = document.getElementById('register-email').value;
             const result = await callApi({ action: 'register', nama, email }, 'register-btn');
-            if (result.status === 'success') setTimeout(() => { window.location.href = 'index.html'; }, 3000);
+            if (result.status === 'success') {
+                setTimeout(() => { window.location.href = 'index.html'; }, 3000);
+            }
         });
     }
 
+    // Logika form OTP
     if (page === 'otp.html') {
         const email = sessionStorage.getItem('userEmailForOTP');
-        if (!email) { window.location.href = 'index.html'; return; }
+        if (!email) {
+            window.location.href = 'index.html';
+            return;
+        }
         document.getElementById('otp-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const otp = document.getElementById('otp-code').value;
             const result = await callApi({ action: 'verifyOTP', email, otp }, 'otp-btn');
             if (result.status === 'success' || result.status === 'change_password_required') {
-                sessionStorage.setItem('appToken', result.token);
-                window.location.href = 'dashboard.html';
+                sessionStorage.removeItem('userEmailForOTP');
+                window.location.href = `dashboard.html?email=${encodeURIComponent(email)}`;
             }
         });
     }
 
+    // Logika form lupa password
     if (page === 'lupa-password.html') {
         document.getElementById('forgot-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -111,10 +109,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Logika form reset password
     if (page === 'reset.html') {
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
-        if (!token) { document.getElementById('reset-container').innerHTML = '<h1 class="text-2xl text-red-600">Token tidak valid.</h1>'; return; }
+        if (!token) {
+            document.body.innerHTML = '<h1 class="text-2xl text-red-600 p-8">Token tidak valid atau tidak ditemukan.</h1>';
+            return;
+        }
         document.getElementById('reset-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const newPassword = document.getElementById('reset-password').value;
@@ -123,7 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const result = await callApi({ action: 'resetPassword', token, newPassword }, 'reset-btn');
-            if (result.status === 'success') setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+            if (result.status === 'success') {
+                setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+            }
         });
     }
 });
